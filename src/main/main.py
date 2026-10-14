@@ -1,6 +1,7 @@
 import csv
 import os
 import sqlite3
+import pandas as pd
 
 # Resolve the resources folder relative to this file, so paths work
 # no matter what directory the script is run from.
@@ -91,7 +92,7 @@ def load_and_clean_call_logs(file_path):
     pattern = r"\d{3}-\d{3}-\d{4}"
     phone_mask = df['phoneNumber'].str.fullmatch(pattern)
     df = df[phone_mask]
-    
+
     numeric_cols = ["startTime", "endTime", "userId"]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col],errors="coerce")    
