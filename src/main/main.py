@@ -53,29 +53,75 @@ def main():
 
 # This function will load the users.csv file into the users table, discarding any records with incomplete data
 def load_and_clean_users(file_path):
+    # Create DF from csv
+    # Skip lines with too many fields
+    df = pd.read_csv(
+            file_path,
+            dtype ={"firstName": "string", "lastName": "string"},
+            on_bad_lines="warn"
+    ) 
 
-    print("TODO: load_users")
+    # print(df.info())
+    # print(f"shape = {df.shape}\n")
+    # print(f"datatypes = {df.dtypes}\n")
+    # print(f"column types = {df.columns}\n")
+    # print(f"index = {df.index}\n")
 
+    cols = ['firstName', 'lastName']
+
+    #Standardize Text Column Values 
+    for col in cols:
+        df[col] = df[col].str.title().str.strip()
+    #Replace Empty Strings
+        df[col] = df[col].replace("",pd.NA)
+
+    #Drop rows with any missing data
+    df = df.dropna(subset=['firstName','lastName'])
+    df.to_sql('users', conn, if_exists="replace")
+                                                                                
 
 # This function will load the callLogs.csv file into the callLogs table, discarding any records with incomplete data
 def load_and_clean_call_logs(file_path):
+    df = pd.read_csv(
+        file_path,
+        on_bad_lines="warn"
+    )
 
-    print("TODO: load_call_logs")
+    df = df.apply(lambda x: x.str.strip() if x.dtype == "string" else x)
+    pattern = r"\d{3}-\d{3}-\d{4}"
+    phone_mask = df['phoneNumber'].str.fullmatch(pattern)
+    df = df[phone_mask]
+    
+    numeric_cols = ["startTime", "endTime", "userId"]
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col],errors="coerce")    
 
+    # Clean Missing Values
+    df = df.dropna()
+
+    #Load to table
+    df.to_sql('callLogs',conn, if_exists="replace", index=False) 
 
 # This function will write analytics data to testUserAnalytics.csv - average call time, and number of calls per user.
 # You must save records consisting of each userId, avgDuration, and numCalls
 # example: 1,105.0,4 - where 1 is the userId, 105.0 is the avgDuration, and 4 is the numCalls.
 def write_user_analytics(csv_file_path):
+    df = pd.read_sql('SELECT * FROM callLogs;', conn)
+    df["duration"] = df["endTime"]-df["startTime"]
+    user_analytics_df = df.groupby("userId").agg(
+        avgDuration = ("duration", "mean"),
+        numCalls = ("userId", "count")
+    ).reset_index()
 
-    print("TODO: write_user_analytics")
+    user_analytics_df.to_csv(csv_file_path,index=False)
 
 
 # This function will write the callLogs ordered by userId, then start time.
 # Then, write the ordered callLogs to orderedCalls.csv
 def write_ordered_calls(csv_file_path):
-
-    print("TODO: write_ordered_calls")
+    df = pd.read_sql("SELECT * FROM callLogs;",conn)
+    df = df.sort_values(by=['userId', 'startTime'])
+    df.to_csv(csv_file_path,index=False)
 
 
 
