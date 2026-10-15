@@ -1,7 +1,6 @@
 import csv
 import os
 import sqlite3
-import pandas as pd
 
 # Resolve the resources folder relative to this file, so paths work
 # no matter what directory the script is run from.
