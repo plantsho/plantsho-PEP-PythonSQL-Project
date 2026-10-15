@@ -59,7 +59,7 @@ def load_and_clean_users(file_path):
 
         headers_len = len(reader.fieldnames)
         for row in reader:
-            if len(row) !=2:
+            if len(row)!=2:
                 continue
             first_name = row.get("firstName").strip()
             last_name = row.get("lastName").strip()
