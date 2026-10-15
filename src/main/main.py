@@ -57,22 +57,22 @@ def load_and_clean_users(file_path):
     with open(file_path,"r") as file:
         reader = csv.DictReader(file)
 
-    headers_len = len(reader.fieldnames)
-    for row in reader:
-        if len(row) !=2:
-            continue
-        first_name = row.get("firstName").strip()
-        last_name = row.get("lastName").strip()
+        headers_len = len(reader.fieldnames)
+        for row in reader:
+            if len(row) !=2:
+                continue
+            first_name = row.get("firstName").strip()
+            last_name = row.get("lastName").strip()
 
-        #missing values
-        if not first_name or not last_name:
-            continue
+            #missing values
+            if not first_name or not last_name:
+                continue
 
-        #extra fields
-        if len(row) > headers_len:
-            continue
+            #extra fields
+            if len(row) > headers_len:
+                continue
 
-        clean_users.append((first_name,last_name))
+            clean_users.append((first_name,last_name))
 
     cursor.executemany(
         "INSERT INTO users (firstName, lastName) VALUES (?,?)",
@@ -85,32 +85,32 @@ def load_and_clean_call_logs(file_path):
     with open(file_path,"r") as file:
         reader = csv.DictReader(file)
 
-    for row in reader:
-        phone = row.get("phoneNumber").strip()
-        start_time = row.get("startTime").strip()
-        end_time = row.get("endTime").strip()
-        direction = row.get("direction").strip()
-        user_id = row.get("userId").strip()
+        for row in reader:
+            phone = row.get("phoneNumber").strip()
+            start_time = row.get("startTime").strip()
+            end_time = row.get("endTime").strip()
+            direction = row.get("direction").strip()
+            user_id = row.get("userId").strip()
 
-        if not all([phone,start_time,end_time,direction,user_id]):
-            continue
+            if not all([phone,start_time,end_time,direction,user_id]):
+                continue
 
-        try:
-            start = int(start_time)
-            end = int(end_time)
-            userId = int(user_id)
-        except ValueError:
-            continue
+            try:
+                start = int(start_time)
+                end = int(end_time)
+                userId = int(user_id)
+            except ValueError:
+                continue
 
-        #make sure start and end times valid
-        if start < 0 or end < start:
-            continue
+            #make sure start and end times valid
+            if start < 0 or end < start:
+                continue
 
-        #validate phone number format
-        if not re.fullmatch(r'\d{3}-\d{3}-\d{4}',phone):
-            continue
+            #validate phone number format
+            if not re.fullmatch(r'\d{3}-\d{3}-\d{4}',phone):
+                continue
 
-        clean_logs.append((phone,start,end,direction,userId))
+            clean_logs.append((phone,start,end,direction,userId))
 
     cursor.executemany(
         """
