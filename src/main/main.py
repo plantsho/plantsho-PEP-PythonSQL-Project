@@ -106,9 +106,9 @@ def load_and_clean_call_logs(file_path):
             if start < 0 or end < start:
                 continue
 
-            #validate phone number format
-            if not re.fullmatch(r'\d{3}-\d{3}-\d{4}',phone):
-                continue
+            # #validate phone number format
+            # if not re.fullmatch(r'\d{3}-\d{3}-\d{4}',phone):
+            #     continue
 
             clean_logs.append((phone,start,end,direction,userId))
 
