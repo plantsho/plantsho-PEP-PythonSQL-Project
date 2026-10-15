@@ -54,77 +54,105 @@ def main():
 
 # This function will load the users.csv file into the users table, discarding any records with incomplete data
 def load_and_clean_users(file_path):
-    # Create DF from csv
-    # Skip lines with too many fields
-    df = pd.read_csv(
-            file_path,
-            dtype ={"firstName": "string", "lastName": "string"},
-            on_bad_lines="warn"
-    ) 
+    clean_users = []
+    with open(file_path,"r") as file:
+        reader = csv.DictReader(file)
 
-    # print(df.info())
-    # print(f"shape = {df.shape}\n")
-    # print(f"datatypes = {df.dtypes}\n")
-    # print(f"column types = {df.columns}\n")
-    # print(f"index = {df.index}\n")
+    headers_len = len(reader.fieldnames)
+    for row in reader:
+        if len(row) !=2:
+            continue
+        first_name = row.get("firstName").strip()
+        last_name = row.get("lastName").strip()
 
-    cols = ['firstName', 'lastName']
+        #missing values
+        if not first_name or not last_name:
+            continue
 
-    #Standardize Text Column Values 
-    for col in cols:
-        df[col] = df[col].str.title().str.strip()
-    #Replace Empty Strings
-        df[col] = df[col].replace("",pd.NA)
+        #extra fields
+        if len(row) > headers_len:
+            continue
 
-    #Drop rows with any missing data
-    df = df.dropna(subset=['firstName','lastName'])
-    df.to_sql('users', conn, if_exists="replace")
-                                                                                
+        clean_users.append((first_name,last_name))
+
+    cursor.executemany(
+        "INSERT INTO users (firstName, lastName) VALUES (?,?)",
+        clean_users
+    )                                              
 
 # This function will load the callLogs.csv file into the callLogs table, discarding any records with incomplete data
 def load_and_clean_call_logs(file_path):
-    df = pd.read_csv(
-        file_path,
-        on_bad_lines="warn"
+    clean_logs = []
+    with open(file_path,"r") as file:
+        reader = csv.DictReader(file)
+
+    for row in reader:
+        phone = row.get("phoneNumber").strip()
+        start_time = row.get("startTime").strip()
+        end_time = row.get("endTime").strip()
+        direction = row.get("direction").strip()
+        user_id = row.get("userId").strip()
+
+        if not all([phone,start_time,end_time,direction,user_id]):
+            continue
+
+        try:
+            start = int(start_time)
+            end = int(end_time)
+            userId = int(user_id)
+        except ValueError:
+            continue
+
+        #make sure start and end times valid
+        if start < 0 or end < start:
+            continue
+
+        #validate phone number format
+        if not re.fullmatch(r'\d{3}-\d{3}-\d{4}',phone):
+            continue
+
+        clean_logs.append((phone,start,end,direction,userId))
+
+    cursor.executemany(
+        """
+        INSERT INTO callLogs (phoneNumber, startTime, endTime, direction, userId) VALUES (?,?,?,?,?);
+        """,
+        clean_logs
     )
-
-    df = df.apply(lambda x: x.str.strip() if x.dtype == "string" else x)
-    pattern = r"\d{3}-\d{3}-\d{4}"
-    phone_mask = df['phoneNumber'].str.fullmatch(pattern)
-    df = df[phone_mask]
-
-    numeric_cols = ["startTime", "endTime", "userId"]
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col],errors="coerce")    
-
-    # Clean Missing Values
-    df = df.dropna()
-
-    #Load to table
-    df.to_sql('callLogs',conn, if_exists="replace", index=False) 
 
 # This function will write analytics data to testUserAnalytics.csv - average call time, and number of calls per user.
 # You must save records consisting of each userId, avgDuration, and numCalls
 # example: 1,105.0,4 - where 1 is the userId, 105.0 is the avgDuration, and 4 is the numCalls.
 def write_user_analytics(csv_file_path):
-    df = pd.read_sql('SELECT * FROM callLogs;', conn)
-    df["duration"] = df["endTime"]-df["startTime"]
-    user_analytics_df = df.groupby("userId").agg(
-        avgDuration = ("duration", "mean"),
-        numCalls = ("userId", "count")
-    ).reset_index()
+    cursor.execute("""
+        SELECT 
+        userId, 
+        AVG(endTime-startTime) AS avgDuration, 
+        COUNT(*) AS numCalls 
+        FROM callLogs
+        GROUP BY userId
+        ORDER BY userId
+    """)
+        
+    rows = cursor.fetchall()
 
-    user_analytics_df.to_csv(csv_file_path,index=False)
-
+    with open(csv_file_path,"w") as file:
+        writer = csv.writer(file)
+        #write header
+        writer.writerow(["userId", "avgDuration", "numCalls"]) 
+        writer.writerows(rows)
 
 # This function will write the callLogs ordered by userId, then start time.
 # Then, write the ordered callLogs to orderedCalls.csv
 def write_ordered_calls(csv_file_path):
-    df = pd.read_sql("SELECT * FROM callLogs;",conn)
-    df = df.sort_values(by=['userId', 'startTime'])
-    df.to_csv(csv_file_path,index=False)
+    cursor.execute(" SELECT * FROM callLogs ORDER BY userId ASC, startTime ASC")
 
+    rows = cursor.fetchall()
 
+    with open(csv_file_path,"w") as file:
+        writer = csv.writer(file)
+        writer.writerow(["callId","phoneNumber","startTime","endTime","direction","userId"])
+        writer.writerows(rows)
 
 # No need to touch the functions below!------------------------------------------
 
