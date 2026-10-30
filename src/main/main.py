@@ -41,7 +41,7 @@ def main():
     write_ordered_calls(os.path.join(_RESOURCES_DIR, 'orderedCalls.csv'))
 
     # Helper method that prints the contents of the users and callLogs tables. Uncomment to see data.
-    # select_from_users_and_call_logs()
+    select_from_users_and_call_logs()
 
     # Close the cursor and connection. main function ends here.
     cursor.close()
@@ -54,7 +54,7 @@ def main():
 # This function will load the users.csv file into the users table, discarding any records with incomplete data
 def load_and_clean_users(file_path):
     clean_users =[]
-    with open(file_path,"r") as file:
+    with open(file_path,"r",newline="") as file:
         reader = csv.DictReader(file)
 
         headers_len = len(reader.fieldnames)
@@ -83,7 +83,7 @@ def load_and_clean_users(file_path):
 # This function will load the callLogs.csv file into the callLogs table, discarding any records with incomplete data
 def load_and_clean_call_logs(file_path):
     clean_logs = []
-    with open(file_path,"r") as file:
+    with open(file_path,"r",newline="") as file:
         reader = csv.DictReader(file)
 
         for row in reader:
@@ -138,7 +138,7 @@ def write_user_analytics(csv_file_path):
         
     rows = cursor.fetchall()
 
-    with open(csv_file_path,"w") as file:
+    with open(csv_file_path,"w",newline="") as file:
         writer = csv.writer(file)
         #write header
         writer.writerow(["userId", "avgDuration", "numCalls"]) 
@@ -151,7 +151,7 @@ def write_ordered_calls(csv_file_path):
 
     rows = cursor.fetchall()
 
-    with open(csv_file_path,"w") as file:
+    with open(csv_file_path,"w",newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["callId","phoneNumber","startTime","endTime","direction","userId"])
         writer.writerows(rows)
