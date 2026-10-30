@@ -119,6 +119,8 @@ def load_and_clean_call_logs(file_path):
         """,
         clean_logs
     )
+    cursor.execute("SELECT COUNT(*) FROM callLogs")
+    print("Inserted calls:", cursor.fetchone()[0])
 
 # This function will write analytics data to testUserAnalytics.csv - average call time, and number of calls per user.
 # You must save records consisting of each userId, avgDuration, and numCalls
